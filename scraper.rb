@@ -23,10 +23,9 @@ end
 
 def area_from(data)
   raise "No state for #{data}" if data[:state].to_s.empty?
-  if data[:house] == 'sen'
+  if data[:district].to_i.zero?
     return "ocd-division/country:us/state:%s" % data[:state].downcase 
   else
-    raise "No district for #{data}" if data[:district].to_s.empty?
     return "ocd-division/country:us/state:%s/cd:%s" % [ data[:state].downcase, data[:district] ]
   end
 end
