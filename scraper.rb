@@ -21,6 +21,17 @@ def gender_from(str)
   raise "unknown gender: #{str}"
 end
 
+def area_from(data)
+  raise "No state for #{data}" if data[:state].to_s.empty?
+  if data[:house] == 'sen'
+    return "ocd-division/country:us/state:%s" % data[:state].downcase 
+  else
+    raise "No district for #{data}" if data[:district].to_s.empty?
+    return "ocd-division/country:us/state:%s/cd:%s" % [ data[:state].downcase, data[:district] ]
+  end
+end
+
+
 def scrape_list(url)
   yaml_at(url).each do |person|
     # TODO any in current Term
@@ -44,7 +55,9 @@ def scrape_list(url)
       address: term['address'],
       phone: term['phone'],
       fax: term['fax'],
+      term: 114,
     }
+    data[:area_id] = area_from(data)
     ScraperWiki.save_sqlite([:id], data)
   end
 end
