@@ -37,7 +37,6 @@ def scrape_list(url)
     term = person['terms'].last
     data = { 
       id: person['id']['bioguide'],
-      wikipedia__en: person['id']['wikipedia'],
       name: person['name']['official_full'],
       image: "https://theunitedstates.io/images/congress/original/#{person['id']['bioguide']}.jpg",
       given_name: person['name']['first'],
@@ -57,6 +56,7 @@ def scrape_list(url)
       term: 114,
     }
     data[:area_id] = area_from(data)
+    person['id'].each { |k,v| data["identifier__#{k}".to_sym] = [v].flatten.first } 
     ScraperWiki.save_sqlite([:id], data)
   end
 end
