@@ -10,11 +10,26 @@ OpenURI::Cache.cache_path = '.cache'
 require 'csv'
 termdates = <<EODATA
 id,name,start_date,end_date,wikidata
-114,114th Congress,2015-01-03,2017-01-03,Q16146771
-113,113th Congress,2013-01-03,2015-01-03,Q71871
-112,112th Congress,2011-01-03,2013-01-03,Q170447
-111,111th Congress,2009-01-03,2011-01-03,Q170375
-110,110th Congress,2007-01-03,2009-01-03,Q170018
+114,114th Congress,2015-01-06,2017-01-03,Q16146771
+113,113th Congress,2013-01-06,2015-01-03,Q71871
+112,112th Congress,2011-01-06,2013-01-03,Q170447
+111,111th Congress,2009-01-06,2011-01-03,Q170375
+110,110th Congress,2007-01-06,2009-01-03,Q170018
+109,109th Congress,2005-01-06,2007-01-03,Q168778
+108,108th Congress,2003-01-06,2005-01-03,Q168504
+107,107th Congress,2001-01-06,2003-01-03,Q2057259
+106,106th Congress,1999-01-06,2001-01-03,Q3596897
+105,105th Congress,1997-01-06,1999-01-03,Q3596884
+104,104th Congress,1995-01-06,1997-01-03,Q3596857
+103,103rd Congress,1993-01-06,1995-01-03,Q3556780
+102,102nd Congress,1991-01-06,1993-01-03,Q347346
+101,101st Congress,1989-01-06,1991-01-03,Q4546373
+100,100th Congress,1987-01-06,1989-01-03,Q4546248
+99,99th Congress,1985-01-06,1987-01-03,Q4646349
+98,98th Congress,1983-01-06,1983-01-03,Q4646254
+97,97th Congress,1981-01-06,1983-01-03,Q4646187
+96,96th Congress,1979-01-06,1981-01-03,Q4646121
+95,95th Congress,1977-01-06,1979-01-03,Q4646042
 EODATA
 @congress = CSV.parse(termdates, headers: true, header_converters: :symbol).map(&:to_hash)
 
@@ -56,20 +71,21 @@ end
 def name_from(names)
   return names['official_full'] if names.key? 'official_full'
 
-	first = names['first']
-  first = names['middle'] if first.end_with? '.'
-	first = names['nickname'] if names.key?('nickname') and names['nickname'].length < first.length
+  first = names['first']
+  first = names['middle']   if first.end_with?('.') and names.key?('middle')
+  first = names['nickname'] if names.key?('nickname') and names['nickname'].length < first.length
 
-	# Last name.
-	last = names['last']
+  last = names['last']
   last = "%s, %s" % [names['last'], names['suffix']] if names.key? 'suffix'
 
-  return first + ' ' + last
+  name = first + ' ' + last  
+  raise "No name for #{names}" if name.to_s.empty?
+  return name
 end
 
 def scrape_list(url)
   yaml_at(url).each do |person|
-    terms = person['terms'].find_all { |t| t['start'] >= '2007-01-03' }
+    terms = person['terms'].find_all { |t| t['start'] >= '1977-01-01' }
     next if terms.empty?
 
     person_data = { 
@@ -82,7 +98,7 @@ def scrape_list(url)
       birth_date: person['bio']['birthday'],
       gender: gender_from(person['bio']['gender']),
     }
-    person['id'].each { |k,v| person_data["identifier__#{k}".to_sym] = [v].flatten.first }  rescue binding.pry
+    person['id'].each { |k,v| person_data["identifier__#{k}".to_sym] = [v].flatten.first }  
 
     terms.each do |term|
       tdata = { 
@@ -100,6 +116,7 @@ def scrape_list(url)
       alldata = person_data.merge(tdata)
 
       @congress.find_all { |c| c[:start_date] <= term['end'] && c[:end_date] >= term['start'] }.each do |c|
+        next unless c[:id].to_i >= 97  
         o = overlap(term, c)
         data = alldata.merge({ 
           term: c[:id],
