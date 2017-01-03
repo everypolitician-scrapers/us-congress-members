@@ -1,5 +1,6 @@
 #!/bin/env ruby
 # encoding: utf-8
+# frozen_string_literal: true
 
 require 'scraperwiki'
 require 'pry'
@@ -41,8 +42,8 @@ def overlap(mem, congress)
   tE = congress[:end_date].to_s.empty?   ? '9999-12-31' : congress[:end_date]
 
   return unless mS <= tE && mE >= tS
-  (s, e) = [mS, mE, tS, tE].sort[1,2]
-  return { 
+  (s, e) = [mS, mE, tS, tE].sort[1, 2]
+  {
     start_date: s == '0000-00-00' ? nil : s,
     end_date:   e == '9999-12-31' ? nil : e,
   }
@@ -62,74 +63,71 @@ end
 def area_from(data)
   raise "No state for #{data}" if data[:state].to_s.empty?
   if data[:district].to_i.zero?
-    return "ocd-division/country:us/state:%s" % data[:state].downcase 
+    return 'ocd-division/country:us/state:%s' % data[:state].downcase
   else
-    return "ocd-division/country:us/state:%s/cd:%s" % [ data[:state].downcase, data[:district] ]
+    return 'ocd-division/country:us/state:%s/cd:%s' % [data[:state].downcase, data[:district]]
   end
 end
 
-# https://github.com/unitedstates/congress-legislators/blob/master/scripts/everypolitician.py
+# https://github.com/unitedstates/congress-legislators/blob/master/scripts/everypolitician.py
 def name_from(names)
   return names['official_full'] if names.key? 'official_full'
 
   first = names['first']
-  first = names['middle']   if first.end_with?('.') and names.key?('middle')
-  first = names['nickname'] if names.key?('nickname') and names['nickname'].length < first.length
+  first = names['middle']   if first.end_with?('.') && names.key?('middle')
+  first = names['nickname'] if names.key?('nickname') && names['nickname'].length < first.length
 
   last = names['last']
-  last = "%s, %s" % [names['last'], names['suffix']] if names.key? 'suffix'
+  last = '%s, %s' % [names['last'], names['suffix']] if names.key? 'suffix'
 
-  name = first + ' ' + last  
+  name = first + ' ' + last
   raise "No name for #{names}" if name.to_s.empty?
-  return name
+  name
 end
 
 def scrape_list(url)
   yaml_at(url).each do |person|
-    terms = person['terms'].find_all { |t| t['start'] >= '1977-01-01' }
+    terms = person['terms'].select { |t| t['start'] >= '1977-01-01' }
     next if terms.empty?
 
-    person_data = { 
-      id: person['id']['bioguide'],
-      name: name_from(person['name']),
-      image: "https://theunitedstates.io/images/congress/original/#{person['id']['bioguide']}.jpg",
-      given_name: person['name']['first'],
+    person_data = {
+      id:          person['id']['bioguide'],
+      name:        name_from(person['name']),
+      image:       "https://theunitedstates.io/images/congress/original/#{person['id']['bioguide']}.jpg",
+      given_name:  person['name']['first'],
       family_name: person['name']['last'],
-      sort_name: "%s, %s" % [ person['name']['last'], person['name']['first'] ],
-      birth_date: person['bio']['birthday'],
-      gender: gender_from(person['bio']['gender']),
+      sort_name:   '%s, %s' % [person['name']['last'], person['name']['first']],
+      birth_date:  person['bio']['birthday'],
+      gender:      gender_from(person['bio']['gender']),
     }
-    person['id'].each { |k,v| person_data["identifier__#{k}".to_sym] = [v].flatten.first }  
+    person['id'].each { |k, v| person_data["identifier__#{k}".to_sym] = [v].flatten.first }
 
     terms.each do |term|
-      tdata = { 
-        house: term['type'],
+      tdata = {
+        house:      term['type'],
         start_date: term['start'],
-        state: term['state'],
-        district: term['district'],
-        party: term['party'],
-        homepage: term['url'],
-        address: term['address'],
-        phone: term['phone'],
-        fax: term['fax'],
+        state:      term['state'],
+        district:   term['district'],
+        party:      term['party'],
+        homepage:   term['url'],
+        address:    term['address'],
+        phone:      term['phone'],
+        fax:        term['fax'],
       }
       tdata[:area_id] = area_from(tdata)
       alldata = person_data.merge(tdata)
 
-      @congress.find_all { |c| c[:start_date] <= term['end'] && c[:end_date] >= term['start'] }.each do |c|
-        next unless c[:id].to_i >= 97  
+      @congress.select { |c| c[:start_date] <= term['end'] && c[:end_date] >= term['start'] }.each do |c|
+        next unless c[:id].to_i >= 97
         o = overlap(term, c)
-        data = alldata.merge({ 
-          term: c[:id],
-          start_date: o[:start_date],
-          end_date: o[:end_date],
-        })
+        data = alldata.merge(term:       c[:id],
+                             start_date: o[:start_date],
+                             end_date:   o[:end_date])
         next if data[:start_date] == data[:end_date]
         # puts "%s %s %s (%s - %s)" % [data[:term], data[:house], data[:name], data[:start_date], data[:end_date]]
-        ScraperWiki.save_sqlite([:id, :term], data)
+        ScraperWiki.save_sqlite(%i(id term), data)
       end
     end
-
   end
 end
 
