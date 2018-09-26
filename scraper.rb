@@ -132,5 +132,6 @@ def scrape_list(url)
   end
 end
 
+ScraperWiki.sqliteexecute('DROP TABLE data') rescue nil
 scrape_list('https://raw.githubusercontent.com/unitedstates/congress-legislators/master/legislators-current.yaml')
 scrape_list('https://raw.githubusercontent.com/unitedstates/congress-legislators/master/legislators-historical.yaml')
