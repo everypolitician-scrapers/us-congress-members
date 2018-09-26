@@ -114,7 +114,7 @@ def scrape_list(url)
         phone:      term['phone'],
         fax:        term['fax'],
       }
-      tdata[:area_id] = [term['state'], term['district']].join("-")
+      tdata[:area_id] = [term['state'], term['district']].compact.join("-")
       tdata[:ocd_id] = area_from(tdata) # TODO remove this
       alldata = person_data.merge(tdata)
 
