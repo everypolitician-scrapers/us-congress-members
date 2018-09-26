@@ -114,7 +114,8 @@ def scrape_list(url)
         phone:      term['phone'],
         fax:        term['fax'],
       }
-      tdata[:area_id] = area_from(tdata)
+      tdata[:area_id] = [term['state'], term['district']].join("-")
+      tdata[:ocd_id] = area_from(tdata) # TODO remove this
       alldata = person_data.merge(tdata)
 
       @congress.select { |c| c[:start_date] <= term['end'] && c[:end_date] >= term['start'] }.each do |c|
