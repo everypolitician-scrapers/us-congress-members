@@ -100,7 +100,7 @@ def scrape_list(url)
       birth_date:  person['bio']['birthday'],
       gender:      gender_from(person['bio']['gender']),
     }
-    person['id'].each { |k, v| person_data["identifier__#{k}".to_sym] = [v].flatten.first }
+    person['id'].each { |k, v| person_data["identifier__#{k}".to_sym] = [v].join(';').tr(' ', '_') }
 
     terms.each do |term|
       tdata = {
