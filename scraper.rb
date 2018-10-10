@@ -110,7 +110,6 @@ def scrape_list(url)
         district:   term['district'],
         party:      term['party'],
         homepage:   term['url'],
-        address:    term['address'],
         phone:      term['phone'],
         fax:        term['fax'],
       }
@@ -125,7 +124,7 @@ def scrape_list(url)
                              start_date: o[:start_date],
                              end_date:   o[:end_date])
         next if data[:start_date] == data[:end_date]
-        # puts "%s %s %s (%s - %s)" % [data[:term], data[:house], data[:name], data[:start_date], data[:end_date]]
+        puts data.reject { |_, v| v.to_s.empty? }.sort_by { |k, _| k }.to_h if ENV['MORPH_DEBUG']
         ScraperWiki.save_sqlite(%i(id term), data)
       end
     end
